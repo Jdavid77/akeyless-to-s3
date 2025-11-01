@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Jdavid77/akeyless-to-s3/compare/v1.0.0...v1.0.1) (2025-11-01)
+
+
+### Bug Fixes
+
+* workflow ([8b23076](https://github.com/Jdavid77/akeyless-to-s3/commit/8b23076158ac0d714fbd2fd8165de70fdcb97ba2))
+
 # 1.0.0 (2025-11-01)
 
 
