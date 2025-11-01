@@ -1,6 +1,6 @@
 module github.com/Jdavid77/akeylesstos3
 
-go 1.25.3
+go 1.23
 
 require (
 	github.com/akeylesslabs/akeyless-go/v3 v3.6.3

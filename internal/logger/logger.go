@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -9,17 +10,28 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Init initializes the global logger with the specified log level
-func Init(logLevel string) {
-	// Set up zerolog to output in JSON format
+// Init initializes the global logger with the specified log level and format
+func Init(logLevel, logFormat string) {
+	// Set up zerolog time format
 	zerolog.TimeFieldFormat = time.RFC3339
 
 	// Parse log level
 	level := parseLogLevel(logLevel)
 	zerolog.SetGlobalLevel(level)
 
+	// Configure output writer based on format
+	var output io.Writer = os.Stdout
+	if strings.ToLower(logFormat) == "console" {
+		// Use human-readable console format
+		output = zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: "2006-01-02 15:04:05",
+		}
+	}
+	// Default to JSON format if not "console"
+
 	// Configure global logger
-	log.Logger = zerolog.New(os.Stdout).
+	log.Logger = zerolog.New(output).
 		With().
 		Timestamp().
 		Caller().

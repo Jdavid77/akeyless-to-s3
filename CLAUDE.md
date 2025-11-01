@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Go application that exports secrets from Akeyless to AWS S3, maintaining folder structure and storing each secret as a JSON file. The application is designed to run as a Kubernetes CronJob for periodic secret backups.
+This is a Go application that exports secrets from Akeyless to AWS S3, maintaining folder structure and storing each secret as a JSON file.
 
 ## Development Commands
 
@@ -32,25 +32,9 @@ docker build -t akeylesstos3:latest .
 
 # Run container with environment file
 docker run --rm --env-file .env akeylesstos3:latest
-```
 
-### Kubernetes Deployment
-
-```bash
-# Apply secrets (after configuring k8s/secrets.yaml)
-kubectl apply -f k8s/secrets.yaml
-
-# Deploy CronJob
-kubectl apply -f k8s/cronjob.yaml
-
-# Check CronJob status
-kubectl get cronjob akeyless-to-s3-exporter
-
-# View logs
-kubectl logs -l app=akeyless-to-s3-exporter --tail=100
-
-# Manually trigger job
-kubectl create job --from=cronjob/akeyless-to-s3-exporter manual-run-$(date +%s)
+# Run with Docker Compose
+docker-compose up --build
 ```
 
 ### Dependency Management
@@ -87,8 +71,8 @@ The application runs as a one-shot job with the following execution flow:
 **internal/config**: Configuration management
 - Loads all settings from environment variables
 - Validates required variables on startup
-- Required: AKEYLESS_ACCESS_ID, AKEYLESS_ACCESS_KEY, AKEYLESS_GATEWAY_URL, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET
-- Optional: BASE_PATH (default: "/"), LOG_LEVEL (default: "info")
+- Required: AKEYLESS_ACCESS_ID, AKEYLESS_ACCESS_KEY, AKEYLESS_GATEWAY_URL, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET, S3_ENDPOINT
+- Optional: BASE_PATH (default: "/"), LOG_LEVEL (default: "info"), LOG_FORMAT (default: "console")
 
 **internal/akeyless**: Akeyless API client wrapper
 - Handles authentication using Access ID and Access Key (returns token for subsequent requests)
@@ -109,8 +93,9 @@ The application runs as a one-shot job with the following execution flow:
 - `SecretItem`: Metadata from Akeyless listing (name and type)
 
 **internal/logger**: Structured logging setup
-- Uses zerolog for JSON-formatted logs
-- Configurable log level via LOG_LEVEL env var
+- Uses zerolog with configurable format (console or JSON)
+- Configurable log level via LOG_LEVEL env var (debug, info, warn, error, fatal)
+- Configurable log format via LOG_FORMAT env var (console, json)
 - Secret values are never logged
 
 ### Key Design Decisions
@@ -136,8 +121,6 @@ The application runs as a one-shot job with the following execution flow:
 ## Environment Configuration
 
 The application requires a `.env` file for local development. Copy `.env.example` to `.env` and fill in actual credentials. The application will exit immediately if any required variables are missing.
-
-For Kubernetes deployments, credentials are stored in `k8s/secrets.yaml` (not committed) and referenced in `k8s/cronjob.yaml`.
 
 ## Security Notes
 

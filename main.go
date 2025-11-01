@@ -22,7 +22,7 @@ func main() {
 	}
 
 	// Initialize logger
-	logger.Init(cfg.LogLevel)
+	logger.Init(cfg.LogLevel, cfg.LogFormat)
 	log.Info().Msg("Starting Akeyless to S3 exporter")
 
 	// Run the main application logic

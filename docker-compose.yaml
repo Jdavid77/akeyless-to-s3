@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  akeylesstos3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: akeylesstos3
+
+    # Environment variables (can be overridden by .env file)
+    environment:
+      # Akeyless Configuration
+      AKEYLESS_ACCESS_KEY: 
+      AKEYLESS_ACCESS_ID: 
+      AKEYLESS_GATEWAY_URL: 
+      BASE_PATH: "/"
+
+      # AWS S3 Configuration
+      AWS_REGION: 
+      AWS_ACCESS_KEY_ID: 
+      AWS_SECRET_ACCESS_KEY: 
+      S3_BUCKET: 
+      S3_ENDPOINT: 
+
+      # Logging Configuration
+      LOG_LEVEL: info
+      LOG_FORMAT: console
+
+    # Restart policy: no restart for one-shot jobs
+    restart: "no"
