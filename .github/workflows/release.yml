@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: ghcr.io
+
 permissions:
   contents: write
   packages: write
@@ -44,6 +47,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Extract Docker metadata
+        if: steps.semantic.outputs.new_release_published == 'true'
         id: meta
         uses: docker/metadata-action@032a4b3bda1b716928481836ac5bfe36e1feaad6
         with:
@@ -55,11 +59,12 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
       
       - name: Build and push Docker image
+        if: steps.semantic.outputs.new_release_published == 'true'
         id: build-and-push
         uses: docker/build-push-action@ccc2b40e9ea6518f9252a22a990f8e868370f62e
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
