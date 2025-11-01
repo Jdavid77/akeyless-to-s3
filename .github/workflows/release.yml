@@ -42,14 +42,25 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        if: steps.semantic.outputs.new_release_published == 'true'
-        uses: docker/build-push-action@v5
+      
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@032a4b3bda1b716928481836ac5bfe36e1feaad6
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ steps.semantic.outputs.new_release_version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@ccc2b40e9ea6518f9252a22a990f8e868370f62e
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.semantic.outputs.new_release_version }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
