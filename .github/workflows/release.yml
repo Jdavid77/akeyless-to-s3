@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '.github/**'
+  pull_request:
+    paths-ignore:
+      - '.github/**'
 
 env:
   REGISTRY: ghcr.io
@@ -32,6 +37,7 @@ jobs:
 
   release:
     needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +69,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract Docker metadata
         if: steps.semantic.outputs.new_release_published == 'true'
         id: meta
@@ -75,7 +81,7 @@ jobs:
             type=ref,event=pr
             type=raw,value=${{ steps.semantic.outputs.new_release_version }}
             type=raw,value=latest
-      
+
       - name: Build and push Docker image
         if: steps.semantic.outputs.new_release_published == 'true'
         id: build-and-push
