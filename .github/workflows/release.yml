@@ -1,14 +1,7 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '.github/**'
-  pull_request:
-    paths-ignore:
-      - '.github/**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -18,52 +11,28 @@ permissions:
   packages: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Build
-        run: go build -o akeylesstos3 .
-
-
   release:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
-        id: semantic
-        with:
-          extra_plugins: |
-            @semantic-release/changelog
-            @semantic-release/git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create date tag
+        id: tag
+        run: |
+          TAG=$(date +'%Y.%m.%d')
+          git tag $TAG
+          git push origin $TAG
+          echo "version=$TAG" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
-        if: steps.semantic.outputs.new_release_published == 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        if: steps.semantic.outputs.new_release_published == 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
-        if: steps.semantic.outputs.new_release_published == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -71,20 +40,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Docker metadata
-        if: steps.semantic.outputs.new_release_published == 'true'
         id: meta
         uses: docker/metadata-action@3caf19fbe3db1a1a6a8bdce189e09ac0ed35d513
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=raw,value=${{ steps.semantic.outputs.new_release_version }}
+            type=raw,value=${{ steps.tag.outputs.version }}
             type=raw,value=latest
 
       - name: Build and push Docker image
-        if: steps.semantic.outputs.new_release_published == 'true'
-        id: build-and-push
         uses: docker/build-push-action@ccc2b40e9ea6518f9252a22a990f8e868370f62e
         with:
           context: .
@@ -93,3 +57,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.tag.outputs.version }}
+          name: ${{ steps.tag.outputs.version }}
+          generate_release_notes: true
