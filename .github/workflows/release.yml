@@ -67,7 +67,7 @@ jobs:
       - name: Extract Docker metadata
         if: steps.semantic.outputs.new_release_published == 'true'
         id: meta
-        uses: docker/metadata-action@032a4b3bda1b716928481836ac5bfe36e1feaad6
+        uses: docker/metadata-action@3caf19fbe3db1a1a6a8bdce189e09ac0ed35d513
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
