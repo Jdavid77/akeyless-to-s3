@@ -19,5 +19,8 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Test
+        run: go test ./...
+
       - name: Build
         run: go build -o akeylesstos3 .

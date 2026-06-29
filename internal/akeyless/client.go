@@ -8,7 +8,7 @@ import (
 
 	"github.com/Jdavid77/akeylesstos3/internal/models"
 	"github.com/akeylesslabs/akeyless-go/v3"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 // Client wraps the Akeyless API client
@@ -16,10 +16,11 @@ type Client struct {
 	apiClient *akeyless.V2ApiService
 	token     string
 	basePath  string
+	log       zerolog.Logger
 }
 
 // NewClient creates a new Akeyless client and authenticates using API key
-func NewClient(gatewayURL, accessID, accessKey, basePath string) (*Client, error) {
+func NewClient(gatewayURL, accessID, accessKey, basePath string, log zerolog.Logger) (*Client, error) {
 	// Create API client configuration
 	cfg := akeyless.NewConfiguration()
 	cfg.Servers = akeyless.ServerConfigurations{
@@ -54,12 +55,13 @@ func NewClient(gatewayURL, accessID, accessKey, basePath string) (*Client, error
 		apiClient: apiClient,
 		token:     token,
 		basePath:  basePath,
+		log:       log,
 	}, nil
 }
 
 // ListAllSecrets recursively lists all secrets from the base path
 func (c *Client) ListAllSecrets(ctx context.Context) ([]models.SecretItem, error) {
-	log.Info().Str("base_path", c.basePath).Msg("Starting to list all secrets")
+	c.log.Info().Str("base_path", c.basePath).Msg("Starting to list all secrets")
 
 	allSecrets := make([]models.SecretItem, 0)
 	pathsToExplore := []string{c.basePath}
@@ -68,7 +70,7 @@ func (c *Client) ListAllSecrets(ctx context.Context) ([]models.SecretItem, error
 		currentPath := pathsToExplore[0]
 		pathsToExplore = pathsToExplore[1:]
 
-		log.Info().Str("path", currentPath).Msg("Listing items in path")
+		c.log.Info().Str("path", currentPath).Msg("Listing items in path")
 
 		listBody := akeyless.ListItems{
 			Token: &c.token,
@@ -77,50 +79,50 @@ func (c *Client) ListAllSecrets(ctx context.Context) ([]models.SecretItem, error
 		// Only set Path if it's not root
 		if currentPath != "/" && currentPath != "" {
 			listBody.Path = akeyless.PtrString(currentPath)
-			log.Info().Str("filter_path", currentPath).Msg("Setting path filter")
+			c.log.Info().Str("filter_path", currentPath).Msg("Setting path filter")
 		} else {
-			log.Info().Msg("Listing all items (no path filter)")
+			c.log.Info().Msg("Listing all items (no path filter)")
 		}
 
 		listResult, _, err := c.apiClient.ListItems(ctx).Body(listBody).Execute()
 		if err != nil {
-			log.Error().Err(err).Str("path", currentPath).Msg("Failed to list items in path, skipping")
+			c.log.Error().Err(err).Str("path", currentPath).Msg("Failed to list items in path, skipping")
 			continue
 		}
 
 		items := listResult.GetItems()
-		log.Info().Int("items_count", len(items)).Str("path", currentPath).Msg("Retrieved items from path")
+		c.log.Info().Int("items_count", len(items)).Str("path", currentPath).Msg("Retrieved items from path")
 
 		for _, item := range items {
 			itemName := item.GetItemName()
 			itemType := item.GetItemType()
 
-			log.Info().Str("item_name", itemName).Str("item_type", itemType).Msg("Processing item")
+			c.log.Info().Str("item_name", itemName).Str("item_type", itemType).Msg("Processing item")
 
 			// If it's a folder, add to paths to explore
 			if itemType == "folder" {
 				pathsToExplore = append(pathsToExplore, itemName)
-				log.Info().Str("folder", itemName).Msg("Found folder, will explore")
-			} else if isSecretType(itemType) {
+				c.log.Info().Str("folder", itemName).Msg("Found folder, will explore")
+			} else if IsSecretType(itemType) {
 				// If it's a secret, add to results
 				allSecrets = append(allSecrets, models.SecretItem{
 					ItemName: itemName,
 					ItemType: itemType,
 				})
-				log.Info().Str("secret", itemName).Str("type", itemType).Msg("Found secret")
+				c.log.Info().Str("secret", itemName).Str("type", itemType).Msg("Found secret")
 			} else {
-				log.Warn().Str("item_name", itemName).Str("item_type", itemType).Msg("Skipping item - not a recognized secret type")
+				c.log.Warn().Str("item_name", itemName).Str("item_type", itemType).Msg("Skipping item - not a recognized secret type")
 			}
 		}
 	}
 
-	log.Info().Int("count", len(allSecrets)).Msg("Finished listing all secrets")
+	c.log.Info().Int("count", len(allSecrets)).Msg("Finished listing all secrets")
 	return allSecrets, nil
 }
 
 // GetSecretValue retrieves the value of a specific secret
 func (c *Client) GetSecretValue(ctx context.Context, secretPath string) (*models.Secret, error) {
-	log.Debug().Str("secret_path", secretPath).Msg("Retrieving secret value")
+	c.log.Debug().Str("secret_path", secretPath).Msg("Retrieving secret value")
 
 	getBody := akeyless.GetSecretValue{
 		Token: &c.token,
@@ -139,7 +141,7 @@ func (c *Client) GetSecretValue(ctx context.Context, secretPath string) (*models
 	}
 
 	// Extract name from path (last component)
-	name := extractNameFromPath(secretPath)
+	name := ExtractNameFromPath(secretPath)
 
 	return &models.Secret{
 		Name:      name,
@@ -149,8 +151,8 @@ func (c *Client) GetSecretValue(ctx context.Context, secretPath string) (*models
 	}, nil
 }
 
-// isSecretType checks if the item type is a secret type
-func isSecretType(itemType string) bool {
+// IsSecretType reports whether itemType is a recognised Akeyless secret type.
+func IsSecretType(itemType string) bool {
 	// Convert to lowercase for case-insensitive comparison
 	itemTypeLower := strings.ToLower(itemType)
 
@@ -171,8 +173,8 @@ func isSecretType(itemType string) bool {
 	return false
 }
 
-// extractNameFromPath extracts the secret name from its full path
-func extractNameFromPath(path string) string {
+// ExtractNameFromPath returns the last path component of a secret path.
+func ExtractNameFromPath(path string) string {
 	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
 	if len(parts) == 0 {
 		return path

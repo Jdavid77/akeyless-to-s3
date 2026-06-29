@@ -20,6 +20,10 @@ type Config struct {
 	AWSSecretAccessKey string
 	S3Bucket           string
 	S3Endpoint         string
+	S3Prefix           string
+
+	// Zip configuration
+	ZipPassword string
 
 	// Logging configuration
 	LogLevel  string
@@ -38,19 +42,20 @@ func Load() (*Config, error) {
 		AWSSecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		S3Bucket:           os.Getenv("S3_BUCKET"),
 		S3Endpoint:         os.Getenv("S3_ENDPOINT"),
+		S3Prefix:           os.Getenv("S3_PREFIX"),
+		ZipPassword:        os.Getenv("ZIP_PASSWORD"),
 		LogLevel:           getEnvOrDefault("LOG_LEVEL", "info"),
 		LogFormat:          getEnvOrDefault("LOG_FORMAT", "console"),
 	}
 
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
 
 	return cfg, nil
 }
 
-// Validate checks that all required configuration is present
-func (c *Config) Validate() error {
+func (c *Config) validate() error {
 	var missing []string
 
 	if c.AkeylessAccessID == "" {

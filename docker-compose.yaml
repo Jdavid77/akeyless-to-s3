@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   akeylesstos3:
@@ -10,17 +10,17 @@ services:
     # Environment variables (can be overridden by .env file)
     environment:
       # Akeyless Configuration
-      AKEYLESS_ACCESS_KEY: 
-      AKEYLESS_ACCESS_ID: 
-      AKEYLESS_GATEWAY_URL: 
+      AKEYLESS_ACCESS_ID: p-8g1174iz2tvuam
+      AKEYLESS_ACCESS_KEY: 6RVRu2ZhLmuWWDFsl3j9acoegIMPEKZ1dFyWAFLeBbc=
+      AKEYLESS_GATEWAY_URL: https://api.akeyless.io
       BASE_PATH: "/"
 
       # AWS S3 Configuration
-      AWS_REGION: 
-      AWS_ACCESS_KEY_ID: 
-      AWS_SECRET_ACCESS_KEY: 
-      S3_BUCKET: 
-      S3_ENDPOINT: 
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: GKc0cb6486f49d5fc7bb1cc3ac
+      AWS_SECRET_ACCESS_KEY: e987a1a5160aa07c0520365bfefb1142365fe5ac1d2a273cb145590a62a9b743
+      S3_BUCKET: akeyless-backups
+      S3_ENDPOINT: http://localhost:3900
 
       # Logging Configuration
       LOG_LEVEL: info
