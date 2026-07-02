@@ -6,6 +6,10 @@ updates:
       interval: weekly
     commit-message:
       prefix: chore
+    groups:
+      go-modules:
+        patterns:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: /
@@ -24,3 +28,7 @@ updates:
       interval: weekly
     commit-message:
       prefix: chore
+    groups:
+      docker:
+        patterns:
+          - "*"
