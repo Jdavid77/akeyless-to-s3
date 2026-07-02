@@ -1,7 +1,7 @@
 FROM scratch
 
-COPY ca-certificates.crt /etc/ssl/certs/
-COPY akeylesstos3 /akeylesstos3
+COPY etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY linux/amd64/akeylesstos3 /akeylesstos3
 
 USER 65534:65534
 
