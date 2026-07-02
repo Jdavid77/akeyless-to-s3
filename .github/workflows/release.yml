@@ -3,9 +3,6 @@ name: Release
 on:
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-
 permissions:
   contents: write
   packages: write
@@ -18,13 +15,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
       - name: Create date tag
-        id: tag
         run: |
-          TAG=$(date +'%Y.%m.%d')
+          TAG=v$(date +'%Y.%m.%d')
           git tag $TAG
           git push origin $TAG
-          echo "version=$TAG" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -39,28 +39,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@020b7354dd55a28effcab0f3b19639fe24d3f58b
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}
-          tags: |
-            type=raw,value=${{ steps.tag.outputs.version }}
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ff26911fd365b0233252dfbd8eede1c0e9ef9a51
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ steps.tag.outputs.version }}
-          name: ${{ steps.tag.outputs.version }}
-          generate_release_notes: true
+          version: ~> v2
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
