@@ -19,7 +19,8 @@ builds:
     binary: akeylesstos3
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
@@ -32,23 +33,20 @@ changelog:
       - "^docs:"
       - "^test:"
 
-dockers:
-  - goos: linux
-    goarch: amd64
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:latest"
+dockers_v2:
+  - images:
+      - "ghcr.io/jdavid77/akeyless-to-s3"
+    tags:
+      - "{{ .Tag }}"
+      - "latest"
+    labels:
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.title": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.url": "https://github.com/Jdavid77/akeyless-to-s3"
+      "org.opencontainers.image.source": "https://github.com/Jdavid77/akeyless-to-s3"
+      "org.opencontainers.image.description": "Exports secrets from Akeyless to AWS S3 as an encrypted zip archive."
     dockerfile: Dockerfile.goreleaser
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.url=https://github.com/Jdavid77/akeyless-to-s3"
-      - "--label=org.opencontainers.image.source=https://github.com/Jdavid77/akeyless-to-s3"
-      - "--label=org.opencontainers.image.licenses=MIT"
-      - "--label=org.opencontainers.image.description=Exports secrets from Akeyless to AWS S3 as an encrypted zip archive."
     extra_files:
       - /etc/ssl/certs/ca-certificates.crt
